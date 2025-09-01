@@ -97,8 +97,12 @@ class HealthKitManager: ObservableObject {
     private func fetchHeartRate() {
         guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else { return }
         
+        let now = Date()
+        let startOfDay = Calendar.current.startOfDay(for: now)
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+        
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let query = HKSampleQuery(sampleType: heartRateType, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { [weak self] _, samples, error in
+        let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { [weak self] _, samples, error in
             guard let self = self, let mostRecentSample = samples?.first as? HKQuantitySample else { return }
             
             DispatchQueue.main.async {
@@ -360,5 +364,54 @@ extension HealthKitManager {
         }
 
         healthStore.execute(query)
+    }
+    
+    func fetchStatistics(completion: @escaping (UserStats) -> Void) {
+        var stats = UserStats()
+        let group = DispatchGroup()
+        
+        // Steps
+        group.enter()
+        fetchMetricData(metric: .steps, range: .week) { data in
+            stats.stepsToday = data.last?.steps ?? 0
+            stats.avgSteps = data.map { $0.steps }.average
+            stats.bestStepsDay = data.map { $0.steps }.max() ?? 0
+            group.leave()
+        }
+        
+        // Heart Rate
+        group.enter()
+        fetchMetricData(metric: .heartRate, range: .week) { data in
+            stats.restingHR = data.map { $0.steps }.min() ?? 0
+            stats.maxHR = data.map { $0.steps }.max() ?? 0
+            group.leave()
+        }
+        
+        // Active Energy
+        group.enter()
+        fetchMetricData(metric: .activeEnergy, range: .week) { data in
+            stats.activeEnergyToday = data.last?.steps ?? 0
+            stats.bestActiveEnergy = data.map { $0.steps }.max() ?? 0
+            group.leave()
+        }
+        
+        // Sleep
+        group.enter()
+        fetchMetricData(metric: .sleep, range: .week) { data in
+            stats.avgSleep = data.map { $0.steps }.average
+            stats.bestSleep = data.map { $0.steps }.max() ?? 0
+            group.leave()
+        }
+        
+        group.notify(queue: .main) {
+            completion(stats)
+        }
+    }
+
+}
+
+extension Array where Element == Double {
+    var average: Double {
+        isEmpty ? 0 : reduce(0, +) / Double(count)
     }
 }

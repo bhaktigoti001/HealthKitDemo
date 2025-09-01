@@ -98,7 +98,7 @@ struct DashboardView: View {
 }
 
 // MARK: - Preview
-struct ContentView_Previews: PreviewProvider {
+struct DashboardView_Previews: PreviewProvider {
     static var previews: some View {
         DashboardView()
     }

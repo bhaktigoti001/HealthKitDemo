@@ -21,7 +21,13 @@ struct MainTabView: View {
             AnalyticsView()
                 .environmentObject(healthKitManager)
                 .tabItem {
-                    Label("Analytics", systemImage: "chart.bar.fill")
+                    Label("Analytics", systemImage: "chart.line.uptrend.xyaxis")
+                }
+            
+            StatisticsView()
+                .environmentObject(healthKitManager)
+                .tabItem {
+                    Label("Statistics", systemImage: "chart.bar.fill")
                 }
         }
     }
