@@ -9,6 +9,7 @@ import SwiftUI
 import Charts
 
 struct AnalyticsView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject var hk: HealthKitManager
     
     @State private var selectedMetric: HealthMetric = .steps
@@ -49,27 +50,8 @@ struct AnalyticsView: View {
                     .font(.headline)
                     .padding(.horizontal)
                 
-                Chart {
-                    ForEach(dailyData) { day in
-                        BarMark(
-                            x: .value("Day", day.date),
-                            y: .value(selectedMetric.rawValue, day.steps)
-                        )
-                        .foregroundStyle(LinearGradient(
-                            colors: [.blue, .purple],
-                            startPoint: .bottom,
-                            endPoint: .top
-                        ))
-                    }
-                }
-                .chartXAxis {
-                    AxisMarks(values: xAxisStride(for: selectedRange)) { value in
-                        AxisGridLine()
-                        AxisValueLabel(format: xAxisFormat(for: selectedRange))
-                    }
-                }
-                .frame(height: 320)
-                .padding(.horizontal)
+                createChart()
+
             }
             .padding(.vertical)
             .frame(maxWidth: .infinity)
@@ -98,9 +80,94 @@ struct AnalyticsView: View {
             )
             .ignoresSafeArea()
         )
-        .onAppear { loadData() }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                loadData()
+            }
+        }
         .onChange(of: selectedMetric) { _ in loadData() }
         .onChange(of: selectedRange) { _ in loadData() }
+    }
+    
+    @ViewBuilder
+    func createChart() -> some View {
+        Chart {
+            ForEach(aggregatedData(for: selectedRange)) { day in
+                BarMark(
+                    x: .value("Day", day.date),
+                    y: .value(selectedMetric.rawValue, day.steps)
+                )
+//                .barWidth(barWidth(for: selectedRange))
+                .foregroundStyle(
+                    LinearGradient(colors: [.blue, .purple],
+                                   startPoint: .bottom,
+                                   endPoint: .top)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.blue, .purple],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                )
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: xAxisStride(for: selectedRange)) { value in
+                AxisGridLine()
+                AxisValueLabel(format: xAxisFormat(for: selectedRange))
+            }
+        }
+        .frame(height: 320)
+        .padding(.horizontal)
+    }
+    
+    func aggregatedData(for range: TimeRange) -> [DailyProgress] {
+        switch range {
+        case .week:
+            return dailyData
+        case .month, .threeMonths:
+            return groupByWeek(dailyData)
+        case .year:
+            return groupByMonth(dailyData)
+        }
+    }
+
+    func groupByWeek(_ data: [DailyProgress]) -> [DailyProgress] {
+        let grouped = Dictionary(grouping: data) { item in
+            Calendar.current.component(.weekOfYear, from: item.date)
+        }
+        return grouped.map { (_, items) in
+            DailyProgress(
+                date: items.first!.date,
+                steps: items.map(\.steps).reduce(0, +)
+            )
+        }
+        .sorted { $0.date < $1.date }
+    }
+
+    func groupByMonth(_ data: [DailyProgress]) -> [DailyProgress] {
+        let grouped = Dictionary(grouping: data) { item in
+            Calendar.current.component(.month, from: item.date)
+        }
+        return grouped.map { (_, items) in
+            DailyProgress(
+                date: items.first!.date,
+                steps: items.map(\.steps).reduce(0, +)
+            )
+        }
+        .sorted { $0.date < $1.date }
+    }
+
+    func barWidth(for range: TimeRange) -> CGFloat {
+        switch range {
+        case .week:
+            return 20
+        case .month, .threeMonths:
+            return 10
+        case .year:
+            return 4
+        }
     }
     
     // MARK: - Chart Axis
