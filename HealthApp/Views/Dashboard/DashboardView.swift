@@ -56,9 +56,9 @@ struct DashboardView: View {
                     
                     // Health Metrics Grid
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 15) {
-                        MetricCard(title: "Heart Rate", value: "\(Int(healthKitManager.heartRate))", unit: "BPM", color: .red)
-                        MetricCard(title: "Active Energy", value: String(format: "%.2f", healthKitManager.activeEnergy), unit: "kcal", color: .orange)
-                        MetricCard(title: "Sleep", value: String(format: "%.1f", healthKitManager.sleepHours), unit: "hours", color: .purple)
+                        MetricCard(title: "Heart Rate", value: "\(Int(healthKitManager.heartRate))", unit: "BPM", icon: "heart", color: .red)
+                        MetricCard(title: "Active Energy", value: String(format: "%.2f", healthKitManager.activeEnergy), unit: "kcal", icon: "flame", color: .orange)
+                        MetricCard(title: "Sleep", value: String(format: "%.1f", healthKitManager.sleepHours), unit: "hours", icon: "bed.double", color: .purple)
                         SyncStatusCard(lastSync: healthKitManager.lastSyncDate, isSyncing: healthKitManager.isSyncing)
                     }
                     
@@ -77,6 +77,13 @@ struct DashboardView: View {
                 }
                 .padding()
             }
+            .background(
+                LinearGradient(
+                    colors: [Color(.systemGroupedBackground), Color(.secondarySystemBackground)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                ).ignoresSafeArea()
+            )
             .navigationTitle("Health Dashboard")
             .refreshable {
                 healthKitManager.fetchAllHealthData()
