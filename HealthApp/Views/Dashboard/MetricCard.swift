@@ -11,6 +11,7 @@ struct MetricCard: View {
     let title: String
     let value: String
     let unit: String
+    let icon: String
     let color: Color
     
     var body: some View {

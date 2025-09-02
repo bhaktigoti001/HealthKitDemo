@@ -271,7 +271,7 @@ class HealthKitManager: ObservableObject {
 
 }
 
-
+// MARK: - Fetch Analytics Data
 extension HealthKitManager {
 
     func fetchMetricData(metric: HealthMetric, range: TimeRange, completion: @escaping ([DailyProgress]) -> Void) {
@@ -365,41 +365,59 @@ extension HealthKitManager {
 
         healthStore.execute(query)
     }
-    
-    func fetchStatistics(completion: @escaping (UserStats) -> Void) {
+}
+
+// MARK: - Fetch Statistics Data
+extension HealthKitManager {
+    func fetchStatistics(for range: DateRange, completion: @escaping (UserStats) -> Void) {
+        let calendar = Calendar.current
+        let now = Date()
+        let startDate: Date
+        
+        switch range {
+        case .today:
+            startDate = calendar.startOfDay(for: now)
+        case .week:
+            startDate = calendar.date(byAdding: .day, value: -7, to: now)!
+        case .month:
+            startDate = calendar.date(byAdding: .month, value: -1, to: now)!
+        case .year:
+            startDate = calendar.date(byAdding: .year, value: -1, to: now)!
+        }
+        
         var stats = UserStats()
         let group = DispatchGroup()
         
-        // Steps
+        // MARK: Steps
         group.enter()
-        fetchMetricData(metric: .steps, range: .week) { data in
-            stats.stepsToday = data.last?.steps ?? 0
-            stats.avgSteps = data.map { $0.steps }.average
-            stats.bestStepsDay = data.map { $0.steps }.max() ?? 0
+        aggregateQuantity(type: .stepCount, start: startDate, end: now) { dailyValues in
+            stats.stepsToday = dailyValues.last ?? 0
+            stats.bestStepsDay = dailyValues.max() ?? 0
+            stats.avgSteps = dailyValues.isEmpty ? 0 : dailyValues.reduce(0, +) / Double(dailyValues.count)
             group.leave()
         }
         
-        // Heart Rate
+        // MARK: Active Energy
         group.enter()
-        fetchMetricData(metric: .heartRate, range: .week) { data in
-            stats.restingHR = data.map { $0.steps }.min() ?? 0
-            stats.maxHR = data.map { $0.steps }.max() ?? 0
+        aggregateQuantity(type: .activeEnergyBurned, start: startDate, end: now) { dailyValues in
+            stats.activeEnergyToday = dailyValues.last ?? 0
+            stats.bestActiveEnergy = dailyValues.max() ?? 0
             group.leave()
         }
         
-        // Active Energy
+        // MARK: Heart Rate
         group.enter()
-        fetchMetricData(metric: .activeEnergy, range: .week) { data in
-            stats.activeEnergyToday = data.last?.steps ?? 0
-            stats.bestActiveEnergy = data.map { $0.steps }.max() ?? 0
+        fetchHeartRateStats(start: startDate, end: now) { resting, max in
+            stats.restingHR = resting
+            stats.maxHR = max
             group.leave()
         }
         
-        // Sleep
+        // MARK: Sleep
         group.enter()
-        fetchMetricData(metric: .sleep, range: .week) { data in
-            stats.avgSleep = data.map { $0.steps }.average
-            stats.bestSleep = data.map { $0.steps }.max() ?? 0
+        fetchSleepStats(start: startDate, end: now) { avg, best in
+            stats.avgSleep = avg
+            stats.bestSleep = best
             group.leave()
         }
         
@@ -408,10 +426,84 @@ extension HealthKitManager {
         }
     }
 
-}
+    private func aggregateQuantity(type: HKQuantityTypeIdentifier, start: Date, end: Date, completion: @escaping ([Double]) -> Void) {
+        guard let quantityType = HKQuantityType.quantityType(forIdentifier: type) else { return completion([]) }
+        
+        let interval: DateComponents
+        if Calendar.current.isDate(start, equalTo: end, toGranularity: .day) {
+            interval = DateComponents(day: 1)
+        } else if Calendar.current.dateComponents([.day], from: start, to: end).day! <= 7 {
+            interval = DateComponents(day: 1)
+        } else {
+            interval = DateComponents(day: 1)
+        }
+        
+        let query = HKStatisticsCollectionQuery(
+            quantityType: quantityType,
+            quantitySamplePredicate: HKQuery.predicateForSamples(withStart: start, end: end),
+            options: .cumulativeSum,
+            anchorDate: Calendar.current.startOfDay(for: start),
+            intervalComponents: interval
+        )
+        
+        query.initialResultsHandler = { _, results, _ in
+            var dailyValues: [Double] = []
+            results?.enumerateStatistics(from: start, to: end) { stat, _ in
+                let value = stat.sumQuantity()?.doubleValue(for: self.unit(for: type)) ?? 0
+                dailyValues.append(value)
+            }
+            DispatchQueue.main.async {
+                completion(dailyValues)
+            }
+        }
+        
+        healthStore.execute(query)
+    }
 
-extension Array where Element == Double {
-    var average: Double {
-        isEmpty ? 0 : reduce(0, +) / Double(count)
+    
+    private func fetchHeartRateStats(start: Date, end: Date, completion: @escaping (Double, Double) -> Void) {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .heartRate) else { return completion(0, 0) }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+        let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: predicate, options: [.discreteAverage, .discreteMax]) { _, result, _ in
+            let avg = result?.averageQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: .minute())) ?? 0
+            let max = result?.maximumQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: .minute())) ?? 0
+            completion(avg, max)
+        }
+        healthStore.execute(query)
+    }
+    
+    private func fetchSleepStats(start: Date, end: Date, completion: @escaping (Double, Double) -> Void) {
+        guard let type = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else { return completion(0, 0) }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+        let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, _ in
+            var durations = [Double]()
+            
+            let calendar = Calendar.current
+            let grouped = Dictionary(grouping: samples as? [HKCategorySample] ?? [], by: { calendar.startOfDay(for: $0.startDate) })
+            for (day, daySamples) in grouped {
+                let totalSleep = daySamples.reduce(0) { $0 + $1.endDate.timeIntervalSince($1.startDate) / 3600 } // hours
+                durations.append(totalSleep) // use `steps` field to store hours for simplicity
+            }
+            
+            let total = durations.reduce(0, +)
+            let avg = durations.isEmpty ? 0 : total / Double(durations.count) // hours
+            let best = (durations.max() ?? 0)
+            completion(avg, best)
+        }
+        healthStore.execute(query)
+    }
+    
+    private func unit(for type: HKQuantityTypeIdentifier) -> HKUnit {
+        switch type {
+        case .stepCount:
+            return .count()
+        case .activeEnergyBurned:
+            return .kilocalorie()
+        default:
+            return .count()
+        }
     }
 }
+
