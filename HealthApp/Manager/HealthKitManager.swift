@@ -293,7 +293,6 @@ extension HealthKitManager {
             quantityType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)
         case .sleep:
             // Sleep is HKCategoryType
-            let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)!
             fetchSleepData(startDate: startDate, endDate: now, completion: completion)
             return
         }
@@ -391,7 +390,7 @@ extension HealthKitManager {
         // MARK: Steps
         group.enter()
         aggregateQuantity(type: .stepCount, start: startDate, end: now) { dailyValues in
-            stats.stepsToday = dailyValues.last ?? 0
+            stats.stepsToday = dailyValues.reduce(0, +)
             stats.bestStepsDay = dailyValues.max() ?? 0
             stats.avgSteps = dailyValues.isEmpty ? 0 : dailyValues.reduce(0, +) / Double(dailyValues.count)
             group.leave()
@@ -400,7 +399,7 @@ extension HealthKitManager {
         // MARK: Active Energy
         group.enter()
         aggregateQuantity(type: .activeEnergyBurned, start: startDate, end: now) { dailyValues in
-            stats.activeEnergyToday = dailyValues.last ?? 0
+            stats.activeEnergyToday = dailyValues.reduce(0, +)
             stats.bestActiveEnergy = dailyValues.max() ?? 0
             group.leave()
         }
@@ -482,7 +481,7 @@ extension HealthKitManager {
             
             let calendar = Calendar.current
             let grouped = Dictionary(grouping: samples as? [HKCategorySample] ?? [], by: { calendar.startOfDay(for: $0.startDate) })
-            for (day, daySamples) in grouped {
+            for (_, daySamples) in grouped {
                 let totalSleep = daySamples.reduce(0) { $0 + $1.endDate.timeIntervalSince($1.startDate) / 3600 } // hours
                 durations.append(totalSleep) // use `steps` field to store hours for simplicity
             }
