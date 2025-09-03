@@ -11,14 +11,18 @@ import SwiftUI
 class AnalyticsViewModel: ObservableObject {
     @Published var dailyData: [DailyProgress] = []
     
+    func getDates(for range: TimeRange) -> [Date] {
+        return aggregatedData(for: range).map { $0.date.startOfDay }
+    }
+    
     func aggregatedData(for range: TimeRange) -> [DailyProgress] {
         switch range {
         case .week:
             return getWeekData()
         case .month:
             return getMonthData()
-        case .threeMonths:
-            return getThreeMonthsData()
+        case .sixMonths:
+            return getSixMonthsData()
         case .year:
             return getYearData()
         }
@@ -56,25 +60,33 @@ class AnalyticsViewModel: ObservableObject {
         return monthData.reversed()
     }
     
-    func getThreeMonthsData() -> [DailyProgress] {
+    func getSixMonthsData() -> [DailyProgress] {
         let calendar = Calendar.current
         let today = Date()
         
-        // Group by week for last 3 months
-        let grouped = Dictionary(grouping: dailyData.filter {
-            guard let threeMonthsAgo = calendar.date(byAdding: .month, value: -3, to: today) else { return false }
-            return $0.date >= threeMonthsAgo && $0.date <= today
-        }) { item in
-            calendar.component(.weekOfYear, from: item.date)
+        // Generate last 6 months start dates
+        var months: [Date] = []
+        for i in (0..<6).reversed() { // oldest first
+            if let date = calendar.date(byAdding: .month, value: -i, to: today),
+               let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: date)) {
+                months.append(monthStart)
+            }
         }
         
-        return grouped.map { (_, items) in
-            DailyProgress(
-                date: items.first!.date,
-                steps: items.map(\.steps).reduce(0, +)
-            )
+        // Group dailyData by month start date
+        let grouped = Dictionary(grouping: dailyData) { item -> Date in
+            let components = calendar.dateComponents([.year, .month], from: item.date)
+            return calendar.date(from: components)!
         }
-        .sorted { $0.date < $1.date }
+        
+        // Map to DailyProgress for all 6 months
+        let result = months.map { monthStart -> DailyProgress in
+            let items = grouped[monthStart] ?? []
+            let totalSteps = items.map(\.steps).reduce(0, +)
+            return DailyProgress(date: monthStart, steps: totalSteps)
+        }
+        
+        return result
     }
     
     func getYearData() -> [DailyProgress] {
@@ -114,7 +126,7 @@ class AnalyticsViewModel: ObservableObject {
         switch range {
         case .week: return 7
         case .month: return 15
-        case .threeMonths: return 3
+        case .sixMonths: return 6
         case .year: return 12
         }
     }
@@ -130,7 +142,7 @@ class AnalyticsViewModel: ObservableObject {
         case .month:
             let day = calendar.component(.day, from: date)
             return "\(day)"
-        case .threeMonths:
+        case .sixMonths:
             formatter.dateFormat = "MMM"
             return formatter.string(from: date)
         case .year:
@@ -172,9 +184,9 @@ class AnalyticsViewModel: ObservableObject {
             }
             return "\(formatter.string(from: startDate)) - \(formatter.string(from: today))"
             
-        case .threeMonths:
-            guard let startDate = calendar.date(byAdding: .month, value: -3, to: today) else {
-                return "Last 3 months"
+        case .sixMonths:
+            guard let startDate = calendar.date(byAdding: .month, value: -5, to: today) else {
+                return "Last 6 months"
             }
             return "\(formatter.string(from: startDate)) - \(formatter.string(from: today))"
             
