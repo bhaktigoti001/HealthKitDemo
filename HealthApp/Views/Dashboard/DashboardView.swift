@@ -95,6 +95,9 @@ struct DashboardView: View {
                     }
                 }
             }
+            .onAppear(perform: {
+                healthKitManager.fetchAllHealthData()
+            })
             .onChange(of: scenePhase) { newPhase in
                 if newPhase == .active {
                     healthKitManager.fetchAllHealthData()

@@ -61,6 +61,9 @@ struct StatisticsView: View {
                 endPoint: .bottom
             ).ignoresSafeArea()
         )
+        .onAppear(perform: {
+            loadData()
+        })
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active {
                 loadData()

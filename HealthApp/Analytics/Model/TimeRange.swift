@@ -10,14 +10,14 @@ import Foundation
 enum TimeRange: String, CaseIterable {
     case week = "1W"
     case month = "1M"
-    case threeMonths = "3M"
+    case sixMonths = "6M"
     case year = "1Y"
     
     var days: Int {
         switch self {
         case .week: return 7
         case .month: return 30
-        case .threeMonths: return 90
+        case .sixMonths: return 90
         case .year: return 365
         }
     }
@@ -28,7 +28,7 @@ enum TimeRange: String, CaseIterable {
             return .day
         case .month:
             return .weekOfMonth
-        case .threeMonths:
+        case .sixMonths:
             return .weekOfMonth
         case .year:
             return .month
