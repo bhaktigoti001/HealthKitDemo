@@ -31,7 +31,7 @@ struct WeeklyProgressView: View {
                 
                 Spacer()
                 
-                Text("\(Int((healthKitManager.weeklyProgress.totalSteps / weeklyGoal) * 100))%")
+                Text(String(format: "%.1f", ((healthKitManager.weeklyProgress.totalSteps / weeklyGoal) * 100)) + "%")
                     .foregroundColor(.blue)
             }
             .padding(.horizontal)
@@ -50,7 +50,8 @@ struct WeeklyProgressView: View {
                             Text("\(Int(day.steps))")
                                 .fontWeight(.bold)
                         }
-                        .frame(width: 60, height: 60)
+                        .padding(.horizontal, 8)
+                        .frame(minWidth: 60, minHeight: 60)
                         .background(Color.blue.opacity(0.1))
                         .cornerRadius(8)
                     }

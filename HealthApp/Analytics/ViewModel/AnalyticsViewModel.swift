@@ -11,10 +11,6 @@ import SwiftUI
 class AnalyticsViewModel: ObservableObject {
     @Published var dailyData: [DailyProgress] = []
     
-    func getDates(for range: TimeRange) -> [Date] {
-        return aggregatedData(for: range).map { $0.date.startOfDay }
-    }
-    
     func aggregatedData(for range: TimeRange) -> [DailyProgress] {
         switch range {
         case .week:
@@ -119,49 +115,6 @@ class AnalyticsViewModel: ObservableObject {
         }
         
         return yearData.sorted { $0.date < $1.date }
-    }
-    
-    // MARK: - Chart Axis
-    func xAxisDesiredCount(for range: TimeRange) -> Int {
-        switch range {
-        case .week: return 7
-        case .month: return 15
-        case .sixMonths: return 6
-        case .year: return 12
-        }
-    }
-    
-    func xAxisLabel(for date: Date, range: TimeRange) -> String {
-        let calendar = Calendar.current
-        let formatter = DateFormatter()
-        
-        switch range {
-        case .week:
-            formatter.dateFormat = "E"
-            return formatter.string(from: date)
-        case .month:
-            let day = calendar.component(.day, from: date)
-            return "\(day)"
-        case .sixMonths:
-            formatter.dateFormat = "MMM"
-            return formatter.string(from: date)
-        case .year:
-            formatter.dateFormat = "MMM"
-            return formatter.string(from: date)
-        }
-    }
-    
-    func yAxisStride(for data: [DailyProgress]) -> Double {
-        let maxValue = yAxisMax(for: data)
-        return maxValue / 5 // 5 labels evenly spaced
-    }
-    
-    func yAxisMax(for data: [DailyProgress]) -> Double {
-        guard let max = data.map(\.steps).max(), max > 0 else {
-            return 1000 // Default max if no data
-        }
-        // Round up to nearest 1000 for better labels
-        return ceil(Double(max) / 1000) * 1000
     }
     
     // Duration label for each filter

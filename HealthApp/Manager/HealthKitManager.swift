@@ -31,7 +31,8 @@ class HealthKitManager: ObservableObject {
         requestAuthorization()
         setupBackgroundDelivery()
         startObservingHealthData()
-        fetchConnectedDevices()
+//        fetchConnectedDevices()
+        fetchDevices()
     }
     
     // MARK: - HealthKit Authorization
@@ -201,6 +202,37 @@ class HealthKitManager: ObservableObject {
                     devices.append(device)
                 }
             }
+            
+            let unique = Dictionary(grouping: devices, by: {
+                "\($0.name ?? "")-\($0.model ?? "")-\($0.hardwareVersion ?? "")"
+            }).compactMap { $0.value.first }
+
+            DispatchQueue.main.async {
+                self.devices = unique
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    func fetchDevices() {
+        guard let sampleType = HKSampleType.quantityType(forIdentifier: .stepCount) else {
+            return
+        }
+        
+        let lastMonth = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
+        let predicate = HKQuery.predicateForSamples(withStart: lastMonth, end: Date(), options: [])
+        
+        let query = HKSampleQuery(sampleType: sampleType,
+                                  predicate: predicate,
+                                  limit: HKObjectQueryNoLimit,
+                                  sortDescriptors: nil) { _, samples, _ in
+            let devices = samples?
+                .compactMap { $0.device }
+                .reduce(into: [String: HKDevice]()) { dict, device in
+                    dict[device.udiDeviceIdentifier ?? UUID().uuidString] = device
+                }
+                .map { $0.value } ?? []
             
             let unique = Dictionary(grouping: devices, by: {
                 "\($0.name ?? "")-\($0.model ?? "")-\($0.hardwareVersion ?? "")"
