@@ -15,6 +15,8 @@ enum DateRange {
 struct StatisticsView: View {
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject var hk: HealthKitManager
+    @EnvironmentObject var goalManager: GoalManager
+    
     @StateObject var viewModel = StatisticsViewModel()
     @State private var stats = UserStats()
     @State private var achievements: [Achievements] = []
@@ -75,7 +77,7 @@ struct StatisticsView: View {
     // MARK: - Statistics Card
     private var statisticsCard: some View {
         VStack(spacing: 16) {
-            StatRow(title: "Steps", value: stats.stepsToday.formattedNumberString(), icon: "figure.walk", color: .blue)
+            StatRow(title: "Steps", value: (selectedRange == .today ? stats.stepsToday : stats.stepsTotal).formattedNumberString(), icon: "figure.walk", color: .blue)
             StatRow(title: "Best Steps Day", value: stats.bestStepsDay.formattedNumberString(), icon: "trophy", color: .yellow)
             StatRow(title: "Average Daily Steps", value: stats.avgSteps.formattedNumberString(), icon: "chart.line.uptrend.xyaxis", color: .green)
             
@@ -115,7 +117,7 @@ struct StatisticsView: View {
     func loadData() {
         hk.fetchStatistics(for: selectedRange) { stats in
             self.stats = stats
-            self.achievements = viewModel.evaluateAchievements(from: stats)
+            self.achievements = viewModel.evaluateAchievements(from: stats, dailyGoal: goalManager.dailyGoal)
         }
     }
 }

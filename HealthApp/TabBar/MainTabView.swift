@@ -9,11 +9,13 @@ import SwiftUI
 
 struct MainTabView: View {
     @StateObject private var healthKitManager = HealthKitManager.shared
+    @StateObject private var goalManager = GoalManager.shared
 
     var body: some View {
         TabView {
             DashboardView()
                 .environmentObject(healthKitManager)
+                .environmentObject(goalManager)
                 .tabItem {
                     Label("Dashboard", systemImage: "house.fill")
                 }
@@ -26,6 +28,7 @@ struct MainTabView: View {
             
             StatisticsView()
                 .environmentObject(healthKitManager)
+                .environmentObject(goalManager)
                 .tabItem {
                     Label("Statistics", systemImage: "chart.bar.fill")
                 }

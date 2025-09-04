@@ -9,6 +9,7 @@ import Foundation
 
 struct UserStats {
     var stepsToday: Double = 0
+    var stepsTotal: Double = 0
     var bestStepsDay: Double = 0
     var avgSteps: Double = 0
     

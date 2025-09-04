@@ -9,10 +9,10 @@ import SwiftUI
 
 struct WeeklyProgressView: View {
     @EnvironmentObject var healthKitManager: HealthKitManager
-    let weeklyGoal: Double
+    @EnvironmentObject var goalManager: GoalManager
     
     var progress: Double {
-        min(healthKitManager.weeklyProgress.totalSteps / weeklyGoal, 1)
+        min(healthKitManager.weeklyProgress.totalSteps / Double(goalManager.weeklyGoal), 1)
     }
     
     var body: some View {
@@ -25,10 +25,10 @@ struct WeeklyProgressView: View {
                 
                 Spacer()
                 
-                Text(String(format: "%.1f%%", (healthKitManager.weeklyProgress.totalSteps / weeklyGoal) * 100))
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.blue)
+                NavigationLink(destination: GoalSettingsView().environmentObject(goalManager)) {
+                    Image(systemName: "gearshape.fill")
+                        .foregroundColor(.blue)
+                }
             }
             
             // Progress Info
@@ -38,10 +38,16 @@ struct WeeklyProgressView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     +
-                    Text(" of \(Int(weeklyGoal)) steps")
+                    Text(" of \(Int(goalManager.weeklyGoal)) steps")
                         .foregroundColor(.secondary)
                 )
+                
                 Spacer()
+                
+                Text(String(format: "%.1f%%", (healthKitManager.weeklyProgress.totalSteps / goalManager.weeklyGoal) * 100))
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.blue)
             }
             
             // Progress Bar

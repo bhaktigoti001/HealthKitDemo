@@ -422,7 +422,8 @@ extension HealthKitManager {
         // MARK: Steps
         group.enter()
         aggregateQuantity(type: .stepCount, start: startDate, end: now) { dailyValues in
-            stats.stepsToday = dailyValues.reduce(0, +)
+            stats.stepsToday = dailyValues.first ?? 0
+            stats.stepsTotal = dailyValues.reduce(0, +)
             stats.bestStepsDay = dailyValues.max() ?? 0
             stats.avgSteps = dailyValues.isEmpty ? 0 : dailyValues.reduce(0, +) / Double(dailyValues.count)
             group.leave()

@@ -11,12 +11,10 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject var healthKitManager: HealthKitManager
+    @EnvironmentObject var goalManager: GoalManager
     @State private var showingManualEntry = false
     @State private var manualSteps = ""
-    
-    private let dailyGoal: Double = 10000
-    private let weeklyGoal: Double = 70000
-    
+        
     var body: some View {
         NavigationView {
             ScrollView {
@@ -33,7 +31,7 @@ struct DashboardView: View {
                                 .frame(width: 200, height: 200)
                             
                             Circle()
-                                .trim(from: 0, to: min(healthKitManager.stepCount / dailyGoal, 1))
+                                .trim(from: 0, to: min(healthKitManager.stepCount / Double(goalManager.dailyGoal), 1))
                                 .stroke(Color.blue, style: StrokeStyle(lineWidth: 20, lineCap: .round))
                                 .frame(width: 200, height: 200)
                                 .rotationEffect(.degrees(-90))
@@ -45,12 +43,12 @@ struct DashboardView: View {
                                     .font(.largeTitle)
                                     .fontWeight(.bold)
                                 
-                                Text("of \(Int(dailyGoal))")
+                                Text("of \(Int(goalManager.dailyGoal))")
                                     .foregroundColor(.gray)
                             }
                         }
                         
-                        Text(String(format: "%.1f%% of daily goal", (healthKitManager.stepCount / dailyGoal) * 100))
+                        Text(String(format: "%.1f%% of daily goal", (healthKitManager.stepCount / Double(goalManager.dailyGoal)) * 100))
                             .font(.headline)
                     }
                     .padding()
@@ -64,8 +62,9 @@ struct DashboardView: View {
                     }
                     
                     // Weekly Progress
-                    WeeklyProgressView(weeklyGoal: weeklyGoal)
+                    WeeklyProgressView()
                         .environmentObject(healthKitManager)
+                        .environmentObject(goalManager)
                     
                     // Devices
                     DevicesView(devices: healthKitManager.devices)
