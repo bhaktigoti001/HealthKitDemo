@@ -21,20 +21,22 @@ struct ManualEntryView: View {
                 } header: {
                     Text("Add Manual Steps")
                 }
-                
-                Section {
-                    Button("Save Steps") {
-                        if let steps = Double(manualSteps) {
-                            onSave(steps)
-                        }
-                    }
-                    .disabled(manualSteps.isEmpty || Double(manualSteps) == nil)
-                }
             }
             .navigationTitle("Manual Entry")
-            .navigationBarItems(trailing: Button("Cancel") {
+            .navigationBarItems(leading:
+                                    Button("Cancel") {
                 dismiss()
-            })
+                manualSteps = ""
+            },
+                                trailing:
+                                    Button("Save Steps") {
+                if let steps = Double(manualSteps) {
+                    onSave(steps)
+                    manualSteps = ""
+                }
+            }
+                .disabled(manualSteps.isEmpty || Double(manualSteps) == nil)
+            )
         }
     }
 }

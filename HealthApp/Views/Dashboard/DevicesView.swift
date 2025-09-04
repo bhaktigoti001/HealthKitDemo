@@ -22,25 +22,36 @@ struct DevicesView: View {
                     .foregroundColor(.gray)
                     .padding()
             } else {
-                ForEach(devices, id: \.name) { device in
-                    HStack {
-                        Image(systemName: "applewatch")
-                        VStack(alignment: .leading) {
+                ForEach(devices, id: \.udiDeviceIdentifier) { device in
+                    HStack(spacing: 12) {
+                        Image(systemName: device.deviceIcon)
+                            .font(.system(size: 28))
+                            .foregroundColor(.blue)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(device.name ?? "Unknown Device")
                                 .fontWeight(.semibold)
-                            if let model = device.model {
+                            
+                            if let model = device.hardwareVersion {
                                 Text(model)
                                     .font(.caption)
                                     .foregroundColor(.gray)
                             }
+                            if let version = device.softwareVersion {
+                                Text("iOS \(version)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
                         }
+                        
                         Spacer()
+                        
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(8)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(12)
                 }
             }
         }

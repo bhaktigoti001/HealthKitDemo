@@ -34,6 +34,19 @@ enum TimeRange: String, CaseIterable {
             return .month
         }
     }
+    
+    var maxZoomScale: CGFloat {
+        switch self {
+        case .week:
+            return 1
+        case .month:
+            return 4
+        case .sixMonths:
+            return 1
+        case .year:
+            return 2
+        }
+    }
 }
 
 enum HealthMetric: String, CaseIterable {
