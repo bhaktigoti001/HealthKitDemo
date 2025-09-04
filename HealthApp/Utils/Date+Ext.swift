@@ -16,13 +16,13 @@ extension Date {
 extension DateFormatter {
     static let shortDay: DateFormatter = {
         let df = DateFormatter()
-        df.dateFormat = "d"       // Day number 1-31
+        df.dateFormat = "d"
         return df
     }()
     
     static let shortMonth: DateFormatter = {
         let df = DateFormatter()
-        df.dateFormat = "MMM"     // Jan, Feb, ...
+        df.dateFormat = "MMM"
         return df
     }()
 }

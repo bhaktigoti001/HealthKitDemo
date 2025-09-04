@@ -15,10 +15,18 @@ struct MetricCard: View {
     let color: Color
     
     var body: some View {
-        VStack {
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.gray)
+        VStack(alignment: .leading) {
+            HStack {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.gray)
+                
+                Spacer()
+                
+                Image(systemName: icon)
+                    .foregroundStyle(color)
+            }
+            .padding(.bottom, 4)
             
             Text(value)
                 .font(.title2)
