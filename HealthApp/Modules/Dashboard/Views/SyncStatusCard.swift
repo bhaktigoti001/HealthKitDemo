@@ -12,10 +12,18 @@ struct SyncStatusCard: View {
     let isSyncing: Bool
     
     var body: some View {
-        VStack {
-            Text("Last Sync")
-                .font(.headline)
-                .foregroundColor(.gray)
+        VStack(alignment: .leading) {
+            HStack {
+                Text("Last Sync")
+                    .font(.headline)
+                    .foregroundColor(.gray)
+                
+                Spacer()
+                
+                Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90")
+                    .foregroundStyle(.gray)
+            }
+            .padding(.bottom, 4)
             
             if isSyncing {
                 ProgressView()

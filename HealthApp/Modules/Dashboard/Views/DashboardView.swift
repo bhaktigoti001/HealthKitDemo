@@ -38,6 +38,7 @@ struct DashboardView: View {
                                 .frame(width: 200, height: 200)
                                 .rotationEffect(.degrees(-90))
                                 .animation(.easeOut, value: healthKitManager.stepCount)
+                                .shadow(radius: 5)
                             
                             VStack {
                                 Text("\(Int(healthKitManager.stepCount))")
@@ -49,13 +50,13 @@ struct DashboardView: View {
                             }
                         }
                         
-                        Text("\(Int((healthKitManager.stepCount / dailyGoal) * 100))% of daily goal")
+                        Text(String(format: "%.1f%% of daily goal", (healthKitManager.stepCount / dailyGoal) * 100))
                             .font(.headline)
                     }
                     .padding()
                     
                     // Health Metrics Grid
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 15) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
                         MetricCard(title: "Heart Rate", value: "\(Int(healthKitManager.heartRate))", unit: "BPM", icon: "heart", color: .red)
                         MetricCard(title: "Active Energy", value: String(format: "%.2f", healthKitManager.activeEnergy), unit: "kcal", icon: "flame", color: .orange)
                         MetricCard(title: "Sleep", value: String(format: "%.1f", healthKitManager.sleepHours), unit: "hours", icon: "bed.double", color: .purple)

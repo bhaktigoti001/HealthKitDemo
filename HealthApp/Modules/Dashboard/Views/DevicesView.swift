@@ -12,7 +12,7 @@ struct DevicesView: View {
     let devices: [HKDevice]
     
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: devices.isEmpty ? .center : .leading) {
             Text("Connected Devices")
                 .font(.headline)
                 .padding(.horizontal)
@@ -20,7 +20,7 @@ struct DevicesView: View {
             if devices.isEmpty {
                 Text("No devices found")
                     .foregroundColor(.gray)
-                    .padding()
+                    .padding(.horizontal)
             } else {
                 ForEach(devices, id: \.udiDeviceIdentifier) { device in
                     HStack(spacing: 12) {
