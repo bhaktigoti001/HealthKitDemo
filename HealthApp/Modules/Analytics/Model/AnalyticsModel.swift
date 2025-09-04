@@ -12,10 +12,6 @@ struct DailyProgress: Identifiable {
     let id = UUID()
     let date: Date
     let steps: Double
-    
-    static func dataEntriesForAnalytics(progress: [DailyProgress]) -> [BarChartDataEntry] {
-        return progress.map({ BarChartDataEntry(x: $0.date.timeIntervalSince1970, y: $0.steps) })
-    }
 }
 
 struct WeeklyProgress {
